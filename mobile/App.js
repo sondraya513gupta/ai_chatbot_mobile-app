@@ -38,6 +38,12 @@ export default function App() {
   const listRef = useRef(null);
 
   useEffect(() => {
+    if (Platform.OS === "web" && typeof document !== "undefined") {
+      document.title = "Pocket AI — Everyday AI Assistant";
+    }
+  }, []);
+
+  useEffect(() => {
     listRef.current?.scrollToEnd({ animated: true });
   }, [messages, loading]);
 
@@ -182,6 +188,12 @@ export default function App() {
               maxLength={2000}
               editable={!loading}
               onSubmitEditing={() => sendMessage()}
+              onKeyPress={(e) => {
+                if (Platform.OS === "web" && e.nativeEvent?.key === "Enter" && !e.nativeEvent?.shiftKey) {
+                  e.preventDefault?.();
+                  sendMessage();
+                }
+              }}
               returnKeyType="send"
               blurOnSubmit
             />
@@ -202,8 +214,22 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#F5F7FB" },
-  container: { flex: 1, backgroundColor: "#F5F7FB" },
+  safeArea: {
+    flex: 1,
+    backgroundColor: Platform.OS === "web" ? "#EBEFF5" : "#F5F7FB"
+  },
+  container: {
+    flex: 1,
+    backgroundColor: "#F5F7FB",
+    width: "100%",
+    maxWidth: 620,
+    alignSelf: "center",
+    ...(Platform.OS === "web"
+      ? {
+          boxShadow: "0 8px 30px rgba(0, 0, 0, 0.08)",
+        }
+      : {})
+  },
   header: {
     flexDirection: "row", alignItems: "center", paddingHorizontal: 20,
     paddingTop: 10, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: "#E9ECF4"
