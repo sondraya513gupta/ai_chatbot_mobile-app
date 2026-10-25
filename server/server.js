@@ -16,10 +16,10 @@ app.get("/health", (_req, res) => {
 
 app.post("/api/chat", async (req, res) => {
   try {
-    const apiKey = process.env.GROQ_API_KEY;
+    const apiKey = process.env.GROQ_API_KEY?.trim();
     if (!apiKey || apiKey === "put_your_groq_api_key_here") {
       return res.status(500).json({
-        error: "Groq API key is not configured. Add GROQ_API_KEY to server/.env."
+        error: "Groq API key is not configured. Add GROQ_API_KEY to environment variables."
       });
     }
 
@@ -43,9 +43,10 @@ app.post("/api/chat", async (req, res) => {
       return res.status(400).json({ error: "The last message must be from the user." });
     }
 
+    const model = (process.env.GROQ_MODEL || "llama-3.3-70b-versatile").trim();
     const groq = new Groq({ apiKey });
     const completion = await groq.chat.completions.create({
-      model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
+      model,
       messages: [
         {
           role: "system",
@@ -67,13 +68,21 @@ app.post("/api/chat", async (req, res) => {
 
     return res.json({ reply });
   } catch (error) {
-    console.error("Chat request failed:", error?.message || error);
-    const status = error?.status === 401 ? 502 : 502;
+    console.error("Chat request failed:", error);
+    const groqErrorMsg = error?.error?.message || error?.message || "";
     let message = "Could not get a response from Groq. Please try again.";
-    if (error?.status === 401) message = "Groq rejected the API key. Check GROQ_API_KEY in server/.env.";
-    else if (error?.status === 429) message = "Groq rate limit or quota reached. Check your Groq account and try again later.";
-    else if (error?.status === 400) message = "The selected Groq model or request may be invalid. Check GROQ_MODEL in server/.env.";
-    return res.status(status).json({ error: message });
+
+    if (error?.status === 401) {
+      message = "Groq rejected the API key. Please check GROQ_API_KEY in Render environment variables.";
+    } else if (error?.status === 404 || groqErrorMsg.toLowerCase().includes("model")) {
+      const selectedModel = (process.env.GROQ_MODEL || "llama-3.3-70b-versatile").trim();
+      message = `Invalid or unavailable model (${selectedModel}). Set GROQ_MODEL to llama-3.3-70b-versatile in Render.`;
+    } else if (error?.status === 429) {
+      message = "Groq rate limit or quota reached. Check your Groq account and try again later.";
+    } else if (groqErrorMsg) {
+      message = `Groq error: ${groqErrorMsg}`;
+    }
+    return res.status(502).json({ error: message, details: groqErrorMsg });
   }
 });
 
