@@ -17,7 +17,7 @@ import { StatusBar as ExpoStatusBar } from "expo-status-bar";
 // Change this to your computer's LAN IP when testing on a physical phone.
 // Android emulator: http://10.0.2.2:3000
 // iOS simulator: http://localhost:3000
-const API_BASE_URL = "http://192.168.29.23:3000";
+const API_BASE_URL = "https://ai-chatbot-mobile-app.onrender.com";
 
 const suggestions = [
   "Explain artificial intelligence",
